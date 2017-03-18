@@ -1,6 +1,6 @@
 # Neo4j Server
 # Repository http://github.com/jedivind/docker-neo4j
-FROM java:openjdk-8-jdk
+FROM java:openjdk-7-jdk
 
 MAINTAINER Vinay Bharadwaj <vbharadwaj@milcord.com>
 
@@ -27,8 +27,11 @@ RUN sed -i -e "s|.*dbms.pagecache.memory=.*|dbms.pagecache.memory=512M|g" /var/l
     && sed -i -e "s|.*keep_logical_logs=.*|keep_logical_logs=100M size|g" /var/lib/neo4j/conf/neo4j.properties \
     && sed -i -e "s|#*remote_shell_enabled=.*|remote_shell_enabled=true|g" /var/lib/neo4j/conf/neo4j.properties \
     && sed -i -e "s|org.neo4j.server.webadmin.rrdb.location=.*|org.neo4j.server.webadmin.rrdb.location=/tmp/rrd|g" /var/lib/neo4j/conf/neo4j-server.properties \
+    && sed -i -e "s|org.neo4j.server.database.location=.*|org.neo4j.server.database.location=/opt/joern-0.3.1/.joernIndex/|g" /var/lib/neo4j/conf/neo4j-server.properties \
+    && sed -i -e "s|org.neo4j.server.webserver.address=.*|org.neo4j.server.webserver.address=127.0.0.1|g" /var/lib/neo4j/conf/neo4j-server.properties \    
     && sed -i -e "s|Dneo4j.ext.udc.source=.*|Dneo4j.ext.udc.source=docker|g" /var/lib/neo4j/conf/neo4j-wrapper.conf \
     && sed -i -e "s|#org.neo4j.server.thirdparty_jaxrs_classes=.*|org.neo4j.server.thirdparty_jaxrs_classes=de.unikiel.inf.comsys.neo4j=/rdf|g" /var/lib/neo4j/conf/neo4j-server.properties
+
 
 RUN apt-get install -y git
 WORKDIR /home/
@@ -40,7 +43,35 @@ RUN unzip target/neo4j-gremlin-plugin-2.1-SNAPSHOT-server-plugin.zip -d /var/lib
 VOLUME /data
 
 COPY neo4j.sh /neo4j.sh
-
 EXPOSE 7474 7473
 
-CMD ["/neo4j.sh"]
+RUN apt-get update
+RUN apt-get upgrade -y && apt-get install -y python-dev python-setuptools python-pip graphviz libgraphviz-dev ant python-pygraphviz python-pip && apt-get clean
+
+# install joern
+RUN cd /opt/ && wget https://github.com/fabsx00/joern/archive/0.3.1.tar.gz && tar xfzv 0.3.1.tar.gz
+RUN cd /opt/joern-0.3.1 && wget http://mlsec.org/joern/lib/lib.tar.gz && tar xfzv lib.tar.gz
+RUN cd /opt/joern-0.3.1 && ant
+# Install gremlin plugin
+# RUN cd /tmp && wget -O neo4j-gremlin.zip http://mlsec.org/joern/lib/neo4j-gremlin-plugin-2.1-SNAPSHOT-server-plugin.zip && unzip neo4j-gremlin.zip -d /usr/share/neo4j/plugins/gremlin-plugin
+#install joern tools
+RUN cd /tmp/ && git clone https://github.com/fabsx00/joern-tools && cd joern-tools && python2 setup.py install
+RUN pip uninstall -y py2neo
+WORKDIR /opt/joern-0.3.1
+RUN mkdir py2neo
+WORKDIR /opt/joern-0.3.1/py2neo
+RUN wget https://codeload.github.com/technige/py2neo/zip/release/2.0.7
+RUN unzip 2.0.7
+WORKDIR py2neo-release-2.0.7
+RUN python setup.py install
+
+WORKDIR /opt/joern-0.3.1/
+RUN mkdir tutorial
+WORKDIR tutorial
+RUN wget http://download.videolan.org/pub/videolan/vlc/2.1.4/vlc-2.1.4.tar.xz
+RUN tar xfJ vlc-2.1.4.tar.xz
+WORKDIR /opt/joern-0.3.1
+RUN ./joern tutorial/vlc-2.1.4/
+RUN apt-get install -y emacs-nox
+RUN chmod -R 777 /opt/joern-0.3.1/
+#CMD ["/neo4j.sh"]
