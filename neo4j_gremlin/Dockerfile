@@ -38,7 +38,7 @@ WORKDIR /home/
 RUN git clone https://github.com/neo4j-contrib/gremlin-plugin.git
 WORKDIR /home/gremlin-plugin
 RUN find . -type f -print0 |xargs -0 sed -i 's,2016,2017,'
-RUN mvn clean package
+RUN mvn -e clean package -Dlicense.skip=true -Dhttps.protocols=TLSv1.2
 RUN unzip target/neo4j-gremlin-plugin-2.1-SNAPSHOT-server-plugin.zip -d /var/lib/neo4j/plugins/gremlin-plugin
 VOLUME /data
 
@@ -47,7 +47,9 @@ EXPOSE 7474 7473
 
 RUN apt-get update
 RUN apt-get upgrade -y && apt-get install -y python-dev python-setuptools python-pip graphviz libgraphviz-dev ant python-pygraphviz python-pip && apt-get clean
-
+RUN pip install virtualenv --upgrade
+RUN pip install --upgrade pip
+RUN apt-get install -y build-essential libssl-dev libffi-dev
 # install joern
 RUN cd /opt/ && wget https://github.com/fabsx00/joern/archive/0.3.1.tar.gz && tar xfzv 0.3.1.tar.gz
 RUN cd /opt/joern-0.3.1 && wget http://mlsec.org/joern/lib/lib.tar.gz && tar xfzv lib.tar.gz
@@ -55,6 +57,7 @@ RUN cd /opt/joern-0.3.1 && ant
 # Install gremlin plugin
 # RUN cd /tmp && wget -O neo4j-gremlin.zip http://mlsec.org/joern/lib/neo4j-gremlin-plugin-2.1-SNAPSHOT-server-plugin.zip && unzip neo4j-gremlin.zip -d /usr/share/neo4j/plugins/gremlin-plugin
 #install joern tools
+RUN pip install cryptography==1.3.4
 RUN cd /tmp/ && git clone https://github.com/fabsx00/joern-tools && cd joern-tools && python2 setup.py install
 RUN pip uninstall -y py2neo
 WORKDIR /opt/joern-0.3.1
