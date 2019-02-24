@@ -47,6 +47,7 @@ EXPOSE 7474 7473
 
 RUN apt-get update
 RUN apt-get upgrade -y && apt-get install -y python-dev python-setuptools python-pip graphviz libgraphviz-dev ant python-pygraphviz python-pip && apt-get clean
+RUN apt-get install -y tmux 
 RUN pip install virtualenv --upgrade
 RUN pip install --upgrade pip
 RUN apt-get install -y build-essential libssl-dev libffi-dev
